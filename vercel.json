@@ -1,59 +1,8 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/", "destination": "/api/index" },
     { "source": "/v1/chat/completions", "destination": "/api/chat" },
     { "source": "/v1/models", "destination": "/api/models" },
-    { "source": "/health", "destination": "/api/health" },
-    { "source": "/api/v1/chat/completions", "destination": "/api/chat" },
-    { "source": "/api/v1/models", "destination": "/api/models" }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "*" }
-      ]
-    }
+    { "source": "/health", "destination": "/api/health" }
   ]
 }
-```
-
-4. Click **Commit changes**
-
-## Alternative: Try These Different Base URLs in Janitor AI
-
-After the changes deploy, try **each of these** in Janitor AI (one at a time):
-
-**Option 1:**
-```
-API Type: OpenAI
-Base URL: https://openai-nim-proxy-iyme.vercel.app
-API Key: test123
-Model: gpt-4o
-```
-
-**Option 2:**
-```
-API Type: OpenAI  
-Base URL: https://openai-nim-proxy-iyme.vercel.app/v1
-API Key: test123
-Model: gpt-4o
-```
-
-**Option 3:**
-```
-API Type: Reverse Proxy
-Base URL: https://openai-nim-proxy-iyme.vercel.app/api
-API Key: test123
-Model: gpt-4o
-```
-
-**Option 4:**
-```
-API Type: Custom OpenAI
-Base URL: https://openai-nim-proxy-iyme.vercel.app/api/v1
-API Key: test123
-Model: gpt-4o
