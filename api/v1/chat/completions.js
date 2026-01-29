@@ -53,11 +53,11 @@ export default async function handler(req, res) {
     let limitedMessages, optimizedMaxTokens;
     
     if (nimModel.includes('z-ai') || nimModel.includes('deepseek')) {
-      limitedMessages = messages.slice(-4);
+      limitedMessages = messages.slice(-24);
       optimizedMaxTokens = Math.min(max_tokens || 2048, 4096);
       console.log(`🧠 INTELLIGENT MODEL: ${nimModel}`);
     } else {
-      limitedMessages = messages.slice(-10);
+      limitedMessages = messages.slice(-24);
       optimizedMaxTokens = Math.min(max_tokens || 2048, 4096);
       console.log(`⚡ FAST MODEL: ${nimModel}`);
     }
