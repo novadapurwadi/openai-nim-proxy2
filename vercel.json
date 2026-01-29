@@ -1,3 +1,14 @@
 {
-  "version": 2
+  "version": 2,
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 25
+    }
+  },
+  "rewrites": [
+    { "source": "/v1/chat/completions", "destination": "/api/v1/chat/completions" },
+    { "source": "/v1/models", "destination": "/api/v1/models" },
+    { "source": "/health", "destination": "/api/health" }
+  ]
 }
