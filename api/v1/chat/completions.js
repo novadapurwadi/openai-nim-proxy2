@@ -1,4 +1,4 @@
-// api/v1/chat/completions.js - FIXED FOR REASONING_CONTENT
+// api/v1/chat/completions.js - HIDE REASONING, SHOW ONLY RESULT
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
@@ -6,13 +6,13 @@ const MODEL_MAPPING = {
   'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
   'gpt-4': 'z-ai/glm4.7',
   'gpt-4-turbo': 'z-ai/glm4.7',
-  'gpt-4o': 'deepseek-ai/deepseek-v3.2',
+  'gpt-4o': 'deepseek-ai/deepseek-v3.1',
   'claude-3-opus': 'deepseek-ai/deepseek-v3.1',
   'claude-3-sonnet': 'z-ai/glm4.7',
   'gemini-pro': 'meta/llama-3.1-8b-instruct'
 };
 
-const TIMEOUT_MS = 180000; // 3 minutes
+const TIMEOUT_MS = 180000;
 
 export default async function handler(req, res) {
   const startTime = Date.now();
@@ -151,24 +151,61 @@ export default async function handler(req, res) {
     
     const choice = data.choices[0];
     
-    // FIXED: Extract from reasoning_content OR regular content
-    let content = 
-      choice.message?.content ||
-      choice.message?.reasoning_content ||  // ✅ THIS IS THE FIX!
-      choice.text ||
-      choice.message?.text ||
-      choice.delta?.content ||
-      choice.content ||
-      '';
+    // SMART CONTENT EXTRACTION - Hide reasoning, show only final result
+    let content = '';
+    let hasReasoning = false;
+    let hasContent = false;
     
-    if (choice.message?.reasoning_content) {
-      console.log('✅ Using reasoning_content');
-    } else if (choice.message?.content) {
-      console.log('✅ Using message.content');
+    // Check what's available
+    if (choice.message?.content && choice.message.content !== null && choice.message.content !== '') {
+      // Regular content exists and is not null/empty
+      content = choice.message.content;
+      hasContent = true;
+      console.log('✅ Using message.content (final answer)');
+    } else if (choice.message?.reasoning_content) {
+      // Only reasoning available, content is null
+      hasReasoning = true;
+      
+      // Try to extract final answer from reasoning
+      const reasoning = choice.message.reasoning_content;
+      
+      // Look for common patterns where models put final answer
+      // Pattern 1: After "Final Answer:" or similar
+      const finalAnswerMatch = reasoning.match(/(?:Final Answer|Answer|Result|Output):\s*(.+)/is);
+      if (finalAnswerMatch) {
+        content = finalAnswerMatch[1].trim();
+        console.log('✅ Extracted final answer from reasoning');
+      } else {
+        // Pattern 2: Last paragraph/section (often the conclusion)
+        const lines = reasoning.split('\n').filter(line => line.trim());
+        if (lines.length > 0) {
+          // Take last 3 lines as likely the final answer
+          content = lines.slice(-3).join('\n').trim();
+          console.log('✅ Using last section of reasoning as answer');
+        } else {
+          // Fallback: use all reasoning (not ideal but better than nothing)
+          content = reasoning;
+          console.log('⚠️ Using full reasoning_content (no clear answer found)');
+        }
+      }
+    } else if (choice.text) {
+      content = choice.text;
+      console.log('✅ Using choice.text');
+    } else if (choice.message?.text) {
+      content = choice.message.text;
+      console.log('✅ Using message.text');
+    }
+    
+    // Log what we found
+    if (hasContent && hasReasoning) {
+      console.log('ℹ️ Model returned both content and reasoning (using content)');
+    } else if (hasReasoning && !hasContent) {
+      console.log('ℹ️ Model returned only reasoning (extracted answer)');
     }
     
     if (!content) {
       console.error('❌ No content found');
+      console.error('Choice structure:', JSON.stringify(choice).substring(0, 500));
       return res.status(200).json({
         error: { message: 'Empty response', type: 'empty_response_error' }
       });
