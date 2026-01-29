@@ -4,13 +4,13 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 
 // YOUR REQUIRED MODELS - Optimized settings
 const MODEL_MAPPING = {
-  'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',           // Fallback - FAST
-  'gpt-4': 'z-ai/glm4.7',                                  // YOUR MODEL
-  'gpt-4-turbo': 'z-ai/glm4.7',                            // YOUR MODEL
-  'gpt-4o': 'deepseek-ai/deepseek-v3.2',                   // YOUR MODEL
-  'claude-3-opus': 'deepseek-ai/deepseek-v3.2',            // YOUR MODEL
-  'claude-3-sonnet': 'z-ai/glm4.7',                        // YOUR MODEL
-  'gemini-pro': 'meta/llama-3.1-8b-instruct'               // Fallback - FAST
+  'gpt-3.5-turbo': 'nvidia/llama-3.1-nemotron-ultra-253b-v1',
+  'gpt-4': 'deepseek-ai/deepseek-v3.2',
+  'gpt-4-turbo': 'z-ai/glm4.7',
+  'gpt-4o': 'deepseek-ai/deepseek-v3.1',
+  'claude-3-opus': 'openai/gpt-oss-120b',
+  'claude-3-sonnet': 'openai/gpt-oss-20b',
+  'gemini-pro': 'qwen/qwen3-next-80b-a3b-thinking'
 };
 
 // CRITICAL: Higher timeout for slower models
