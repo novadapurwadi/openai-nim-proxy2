@@ -1,19 +1,18 @@
-// api/v1/chat/completions.js - OPTIMIZED FOR SLOW INTELLIGENT MODELS
+// api/v1/chat/completions.js - FIXED FOR REASONING_CONTENT
 const NIM_API_BASE = 'https://integrate.api.nvidia.com/v1';
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
-// Your required intelligent models
 const MODEL_MAPPING = {
-  'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',     // Fast fallback
-  'gpt-4': 'z-ai/glm4.7',                            // High intelligence
-  'gpt-4-turbo': 'z-ai/glm4.7',                      // High intelligence
-  'gpt-4o': 'deepseek-ai/deepseek-v3.1',             // High intelligence
-  'claude-3-opus': 'deepseek-ai/deepseek-v3.1',      // High intelligence
-  'claude-3-sonnet': 'z-ai/glm4.7',                  // High intelligence
-  'gemini-pro': 'meta/llama-3.1-8b-instruct'         // Fast fallback
+  'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
+  'gpt-4': 'z-ai/glm4.7',
+  'gpt-4-turbo': 'z-ai/glm4.7',
+  'gpt-4o': 'deepseek-ai/deepseek-v3.2',
+  'claude-3-opus': 'deepseek-ai/deepseek-v3.1',
+  'claude-3-sonnet': 'z-ai/glm4.7',
+  'gemini-pro': 'meta/llama-3.1-8b-instruct'
 };
 
-const TIMEOUT_MS = 180000; // 180 seconds (3 minutes) for very slow models
+const TIMEOUT_MS = 180000; // 3 minutes
 
 export default async function handler(req, res) {
   const startTime = Date.now();
@@ -51,16 +50,13 @@ export default async function handler(req, res) {
     const requestModel = model || 'gpt-4o';
     const nimModel = MODEL_MAPPING[requestModel] || 'deepseek-ai/deepseek-v3.1';
     
-    // EXTREME optimization for intelligent models
     let limitedMessages, optimizedMaxTokens;
     
     if (nimModel.includes('z-ai') || nimModel.includes('deepseek')) {
-      // For GLM 4.7 and DeepSeek: VERY aggressive limits
-      limitedMessages = messages.slice(-4);  // Only last 4 messages (2 turns)
-      optimizedMaxTokens = Math.min(max_tokens || 300, 512); // Max 512 tokens
-      console.log(`🧠 INTELLIGENT MODEL: ${nimModel} (will be slow)`);
+      limitedMessages = messages.slice(-4);
+      optimizedMaxTokens = Math.min(max_tokens || 512, 1024);
+      console.log(`🧠 INTELLIGENT MODEL: ${nimModel}`);
     } else {
-      // For fast models: normal limits
       limitedMessages = messages.slice(-10);
       optimizedMaxTokens = Math.min(max_tokens || 1024, 2048);
       console.log(`⚡ FAST MODEL: ${nimModel}`);
@@ -68,8 +64,7 @@ export default async function handler(req, res) {
     
     console.log(`📨 ${requestModel} -> ${nimModel}`);
     console.log(`📊 Messages: ${messages.length} -> ${limitedMessages.length}`);
-    console.log(`🎯 Max tokens: ${optimizedMaxTokens}`);
-    console.log(`⏱️ Timeout: ${TIMEOUT_MS/1000}s`);
+    console.log(`🎯 Tokens: ${optimizedMaxTokens}`);
     
     const nimRequest = {
       model: nimModel,
@@ -80,7 +75,7 @@ export default async function handler(req, res) {
       stream: false
     };
     
-    console.log(`🚀 [${Date.now() - startTime}ms] Calling NVIDIA... (this may take 30-120s)`);
+    console.log(`🚀 Calling NVIDIA...`);
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
@@ -104,13 +99,11 @@ export default async function handler(req, res) {
       
       if (fetchError.name === 'AbortError') {
         const elapsed = Date.now() - startTime;
-        console.error(`❌ TIMEOUT after ${elapsed}ms`);
+        console.error(`❌ Timeout after ${elapsed}ms`);
         return res.status(200).json({
           error: {
-            message: `Model ${nimModel} timed out after ${Math.floor(elapsed/1000)}s. This is a very slow model. Please: 1) Clear chat history in Janitor AI, 2) Keep messages shorter, 3) Wait patiently (can take 2-3 minutes)`,
-            type: 'timeout_error',
-            elapsed_seconds: Math.floor(elapsed/1000),
-            model: nimModel
+            message: `Timeout after ${Math.floor(elapsed/1000)}s. Clear chat history and try again.`,
+            type: 'timeout_error'
           }
         });
       }
@@ -120,7 +113,7 @@ export default async function handler(req, res) {
     clearTimeout(timeoutId);
     
     const elapsed = Date.now() - startTime;
-    console.log(`📡 [${elapsed}ms] Response status: ${response.status}`);
+    console.log(`📡 [${elapsed}ms] Response: ${response.status}`);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -128,19 +121,13 @@ export default async function handler(req, res) {
       
       if (response.status === 429) {
         return res.status(200).json({
-          error: {
-            message: 'Rate limit exceeded. Wait 2-3 minutes before trying again.',
-            type: 'rate_limit_error'
-          }
+          error: { message: 'Rate limit exceeded. Wait 2-3 minutes.', type: 'rate_limit_error' }
         });
       }
       
       if (response.status === 401) {
         return res.status(200).json({
-          error: {
-            message: 'Invalid API key. Check your NVIDIA API key.',
-            type: 'authentication_error'
-          }
+          error: { message: 'Invalid API key', type: 'authentication_error' }
         });
       }
       
@@ -156,41 +143,39 @@ export default async function handler(req, res) {
     const data = await response.json();
     
     if (!data.choices || !data.choices[0]) {
-      console.error('❌ No choices in response');
-      console.error('Response:', JSON.stringify(data).substring(0, 500));
+      console.error('❌ No choices');
       return res.status(200).json({
-        error: {
-          message: 'Invalid response from NVIDIA - no choices',
-          type: 'api_error'
-        }
+        error: { message: 'Invalid response - no choices', type: 'api_error' }
       });
     }
     
     const choice = data.choices[0];
     
-    // Extract content with all possible fallbacks
+    // FIXED: Extract from reasoning_content OR regular content
     let content = 
       choice.message?.content ||
+      choice.message?.reasoning_content ||  // ✅ THIS IS THE FIX!
       choice.text ||
       choice.message?.text ||
       choice.delta?.content ||
       choice.content ||
       '';
     
+    if (choice.message?.reasoning_content) {
+      console.log('✅ Using reasoning_content');
+    } else if (choice.message?.content) {
+      console.log('✅ Using message.content');
+    }
+    
     if (!content) {
-      console.error('❌ No content in response');
-      console.error('Choice structure:', JSON.stringify(choice).substring(0, 500));
+      console.error('❌ No content found');
       return res.status(200).json({
-        error: {
-          message: 'Empty response from model',
-          type: 'empty_response_error'
-        }
+        error: { message: 'Empty response', type: 'empty_response_error' }
       });
     }
     
     const totalTime = Date.now() - startTime;
-    console.log(`✅ SUCCESS in ${totalTime}ms (${Math.floor(totalTime/1000)}s)`);
-    console.log(`📝 Response: ${content.length} characters`);
+    console.log(`✅ Success in ${totalTime}ms - ${content.length} chars`);
     
     return res.status(200).json({
       id: `chatcmpl-${Date.now()}`,
@@ -215,13 +200,9 @@ export default async function handler(req, res) {
     });
     
   } catch (error) {
-    const totalTime = Date.now() - startTime;
-    console.error(`❌ Exception after ${totalTime}ms:`, error.message);
+    console.error(`❌ Exception:`, error.message);
     return res.status(200).json({
-      error: {
-        message: error.message || 'Internal error',
-        type: 'server_error'
-      }
+      error: { message: error.message || 'Internal error', type: 'server_error' }
     });
   }
 }
