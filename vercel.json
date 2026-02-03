@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "api/**/*.js": {
-      "memory": 1024,
+      "memory": 2048,
       "maxDuration": 200
     }
   },
