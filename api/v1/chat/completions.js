@@ -12,7 +12,7 @@ const MODEL_MAPPING = {
   'gemini-pro': 'meta/llama-3.1-8b-instruct'
 };
 
-const TIMEOUT_MS = 180000;
+const TIMEOUT_MS = 50000;
 
 export default async function handler(req, res) {
   const startTime = Date.now();
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       console.log(`🧠 INTELLIGENT MODEL: ${nimModel}`);
     } else {
       limitedMessages = messages.slice(-24);
-      optimizedMaxTokens = Math.min(max_tokens || 4096, 8192);
+      optimizedMaxTokens = Math.min(max_tokens || 4096, 30000);
       console.log(`⚡ FAST MODEL: ${nimModel}`);
     }
     
