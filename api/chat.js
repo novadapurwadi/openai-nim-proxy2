@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
       model: nimModel,
       messages: messages,
       temperature: temperature || 0.8,
-      max_tokens: max_tokens || 13000,
+      max_tokens: max_tokens || 130000,
       extra_body: ENABLE_THINKING_MODE ? { chat_template_kwargs: { thinking: true } } : undefined,
       stream: false // Vercel doesn't handle streaming well
     };
