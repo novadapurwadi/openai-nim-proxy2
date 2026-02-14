@@ -4,15 +4,15 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 
 const MODEL_MAPPING = {
   'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
-  'gpt-4': 'z-ai/glm4.7',
-  'gpt-4-turbo': 'z-ai/glm4.7',
+  'gpt-4': 'z-ai/glm5',
+  'gpt-4-turbo': 'z-ai/glm5',
   'gpt-4o': 'deepseek-ai/deepseek-v3.1',
   'claude-3-opus': 'deepseek-ai/deepseek-v3.1',
   'claude-3-sonnet': 'z-ai/glm4.7',
   'gemini-pro': 'meta/llama-3.1-8b-instruct'
 };
 
-const TIMEOUT_MS = 50000;
+const TIMEOUT_MS = 500000;
 
 export default async function handler(req, res) {
   const startTime = Date.now();
@@ -54,11 +54,11 @@ export default async function handler(req, res) {
     
     if (nimModel.includes('z-ai') || nimModel.includes('deepseek')) {
       limitedMessages = messages.slice(-24);
-      optimizedMaxTokens = Math.min(max_tokens || 4096, 8192);
+      optimizedMaxTokens = Math.min(max_tokens || 4096, 120000);
       console.log(`🧠 INTELLIGENT MODEL: ${nimModel}`);
     } else {
       limitedMessages = messages.slice(-24);
-      optimizedMaxTokens = Math.min(max_tokens || 4096, 30000);
+      optimizedMaxTokens = Math.min(max_tokens || 4096, 120000);
       console.log(`⚡ FAST MODEL: ${nimModel}`);
     }
     
